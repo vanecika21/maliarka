@@ -98,21 +98,25 @@ function isLow(m) {
   );
 }
 
-// aduna inapoi in stoc cantitatea consumata de un set de randuri (editare/stergere lucrare)
+// aduna inapoi in stoc cantitatea SI valoarea consumata de un set de randuri (editare/stergere lucrare)
 function restoreStock(materiale, rows) {
   let next = materiale;
   for (const row of rows) {
     if (!row.material_id) continue;
     next = next.map((mat) =>
       mat.id === row.material_id
-        ? { ...mat, cantitate: Number(mat.cantitate) + Number(row.cantitate) }
+        ? {
+            ...mat,
+            cantitate: Number(mat.cantitate) + Number(row.cantitate),
+            pret: mat.pret != null ? Math.round((Number(mat.pret) + Number(row.cost || 0)) * 100) / 100 : mat.pret,
+          }
         : mat
     );
   }
   return next;
 }
 
-// scade din stoc si calculeaza costul (pe baza pretului TOTAL / cantitatea TOTALA a materialului)
+// scade din stoc SI din pretul total (pastrand pretul unitar constant) pe baza unui set de randuri
 function consumeStock(materiale, rows) {
   let next = materiale;
   const rowsWithCost = [];
@@ -126,7 +130,13 @@ function consumeStock(materiale, rows) {
       const pretUnitar = Number(mat.cantitate) > 0 && mat.pret != null ? Number(mat.pret) / Number(mat.cantitate) : 0;
       cost = Math.round(pretUnitar * cantitateFolosita * 100) / 100;
       next = next.map((m) =>
-        m.id === row.material_id ? { ...m, cantitate: Number(m.cantitate) - cantitateFolosita } : m
+        m.id === row.material_id
+          ? {
+              ...m,
+              cantitate: Number(m.cantitate) - cantitateFolosita,
+              pret: m.pret != null ? Math.round((Number(m.pret) - cost) * 100) / 100 : m.pret,
+            }
+          : m
       );
     }
 
